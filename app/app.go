@@ -36,9 +36,12 @@ type Response struct {
 }
 
 type Pagination struct {
-	PerPage int `json:"perPage"`
-	Page    int `json:"page"`
-	Total   int `json:"total"`
+	TotalItems   int `json:"totalItems"`
+	TotalPages   int `json:"totalPages"`
+	ItemsPerPage int `json:"itemsPerPage"`
+	CurrentPage  int `json:"currentPage"`
+	NextPage     int `json:"nextPage"`
+	PreviousPage int `json:"previousPage"`
 }
 
 type PageResponse struct {
@@ -67,4 +70,17 @@ func Render(c *gin.Context, name string, data interface{}) {
 		"bugtrack":  data,
 		"container": name,
 	})
+}
+
+func CheckProject(pid int) (ok bool) {
+	if pid <= 0 {
+		return false
+	}
+	for _, p := range Config.Projects {
+		if p.ID == pid {
+			ok = true
+		}
+	}
+
+	return
 }

@@ -46,6 +46,8 @@
     <tbody id="tbody">
     </tbody>
   </table>
+  <div style="padding-top:10px;float: right;" id="issue-page">
+  </div>
 </div>
 <div class="modal fade" id="editModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl" >
@@ -104,7 +106,25 @@
     </div>
   </div>
   <script>
+
    const render = (data) => {
+
+     var paging = paginate(
+       data.totalItems,
+       data.currentPage,
+       data.itemsPerPage,
+       data.totalPages
+     )
+     var show = "<span style=\"padding-right: 10px;\">当前总数 "+ paging.totalItems+"</span>"
+     if (paging.startPage != paging.endPage){
+       if (paging.startPage > 1) {
+         show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.endPage-1)+","+paging.pageSize+")\">上一页</buttom>"
+       }
+       if (paging.currentPage < paging.totalPages) {
+         show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.startPage+1)+","+paging.pageSize+")\">下一页</buttom>"
+       }
+     }
+     document.querySelector("#issue-page").innerHTML = show
      var data = data.data
      document.querySelector("#tbody").innerHTML = ""
      for(var i=0;i<data.length;i++){
@@ -129,6 +149,8 @@
 
        document.querySelector("#tbody").appendChild(dom)
      }
+
+
    }
 
    const cancel = () => {
@@ -148,7 +170,6 @@
      var assignee = document.querySelector("#issue-assignee")
      var data = {}
      var method = "PUT"
-     console.log(label, label.value, id ,id.value)
      if (id.value!="") {
        data = {
          projectId:parseInt(pid.value),
@@ -177,7 +198,7 @@
        body: JSON.stringify(data), // data can be `string` or {object}!
        headers: new Headers({'Content-Type': 'application/json'})
      }).then(response => response.json())
-       .then(data => load());
+       .then(data => load(1, 20));
    }
 
    const setModal = (data) => {
@@ -191,7 +212,9 @@
        description.value = data.data.description
      }
      select(data.data.labels, "#issue-label")
-     select(data.data.assignee, "#issue-assignee")
+     if (data.data.assignee!=null){
+       select(data.data.assignee.id, "#issue-assignee")
+     }
      select(data.data.project_id, "#project-id")
 
    }
@@ -211,11 +234,25 @@
 
    }
 
-   const load = () => {
+   const load = (page, perPage) => {
+     if (page <= 0) {
+       page = 1
+     }
+     if (perPage <= 0) {
+       perPage = 20
+     }
      var projectId = document.querySelector("#project").value
      var state = document.querySelector("#state").value
      var label = document.querySelector("#label").value
-     var data = {projectId:parseInt(projectId),options:{state:state,labels:[label]}}
+     var data = {
+       projectId:parseInt(projectId),
+       options:{
+         page: page,
+         perPage: perPage,
+         state:state,
+         labels:[label]
+       }
+     }
 
      fetch('/issues', {
        method: 'POST', // or 'PUT'
@@ -274,7 +311,7 @@
    }
 
    (() => {
-     load()
+     load(1, 20)
      loadMembers()
    })()
 

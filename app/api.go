@@ -46,6 +46,10 @@ func Upload(c *gin.Context) {
 			return
 		}
 	}
+	if !CheckProject(pid) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
 	var projectUrl string
 	for _, p := range Config.Projects {
 		if p.ID == pid {
@@ -103,6 +107,11 @@ func GetIssue(c *gin.Context) {
 		return
 	}
 
+	if !CheckProject(pid) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
+
 	issue, _, err := Gitlab.Issues.GetIssue(pid, id, nil)
 	if err != nil {
 		Error(c, 500, err)
@@ -134,6 +143,10 @@ func GetMembers(c *gin.Context) {
 		Error(c, 500, errors.New("Params error."))
 	}
 
+	if !CheckProject(projectMembers.ProjectID) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
 	members, response, err := Gitlab.ProjectMembers.ListAllProjectMembers(projectMembers.ProjectID, projectMembers.Options, nil)
 	if err != nil {
 		Error(c, 500, err)
@@ -147,9 +160,12 @@ func GetMembers(c *gin.Context) {
 			Data: members,
 		},
 		Pagination: Pagination{
-			PerPage: response.ItemsPerPage,
-			Page:    response.CurrentPage,
-			Total:   response.TotalItems,
+			ItemsPerPage: response.ItemsPerPage,
+			CurrentPage:  response.CurrentPage,
+			TotalItems:   response.TotalItems,
+			TotalPages:   response.TotalPages,
+			NextPage:     response.NextPage,
+			PreviousPage: response.PreviousPage,
 		},
 	})
 }
@@ -159,6 +175,11 @@ func GetComments(c *gin.Context) {
 	var projectsIssueComments ProjectsIssueComments
 	if err := c.ShouldBindJSON(&projectsIssueComments); err != nil {
 		Error(c, 500, errors.New("Params error."))
+		return
+	}
+
+	if !CheckProject(projectsIssueComments.ProjectID) {
+		Error(c, 403, errors.New("No permission."))
 		return
 	}
 	notes, response, err := Gitlab.Notes.ListIssueNotes(projectsIssueComments.ProjectID,
@@ -177,9 +198,12 @@ func GetComments(c *gin.Context) {
 			Data: notes,
 		},
 		Pagination: Pagination{
-			PerPage: response.ItemsPerPage,
-			Page:    response.CurrentPage,
-			Total:   response.TotalItems,
+			ItemsPerPage: response.ItemsPerPage,
+			CurrentPage:  response.CurrentPage,
+			TotalItems:   response.TotalItems,
+			TotalPages:   response.TotalPages,
+			NextPage:     response.NextPage,
+			PreviousPage: response.PreviousPage,
 		},
 	})
 }
@@ -197,6 +221,11 @@ func ShowIssue(c *gin.Context) {
 		return
 	}
 
+	if !CheckProject(pid) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
+
 	issue, _, err := Gitlab.Issues.GetIssue(pid, id, nil)
 	if err != nil {
 		Error(c, 500, err)
@@ -211,6 +240,11 @@ func GetIssues(c *gin.Context) {
 	var issueOptions ListIssueOptions
 	if err := c.ShouldBindJSON(&issueOptions); err != nil {
 		Error(c, 404, errors.New("Params error."))
+		return
+	}
+
+	if !CheckProject(issueOptions.ProjectID) {
+		Error(c, 403, errors.New("No permission."))
 		return
 	}
 
@@ -235,9 +269,12 @@ func GetIssues(c *gin.Context) {
 			Data: issues,
 		},
 		Pagination{
-			PerPage: response.ItemsPerPage,
-			Page:    response.CurrentPage,
-			Total:   response.TotalItems,
+			ItemsPerPage: response.ItemsPerPage,
+			CurrentPage:  response.CurrentPage,
+			TotalItems:   response.TotalItems,
+			TotalPages:   response.TotalPages,
+			NextPage:     response.NextPage,
+			PreviousPage: response.PreviousPage,
 		},
 	})
 }
@@ -253,6 +290,11 @@ func CreateIssue(c *gin.Context) {
 	var issueOptions CreateIssueOptions
 	if err := c.ShouldBindJSON(&issueOptions); err != nil {
 		Error(c, 404, errors.New("Params error."))
+		return
+	}
+
+	if !CheckProject(issueOptions.ProjectID) {
+		Error(c, 403, errors.New("No permission."))
 		return
 	}
 	issue, _, err := Gitlab.Issues.CreateIssue(issueOptions.ProjectID, &issueOptions.Options, nil)
@@ -297,6 +339,11 @@ func RemoveIssue(c *gin.Context) {
 		Error(c, 500, err)
 		return
 	}
+
+	if !CheckProject(pid) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
 	if _, err := Gitlab.Issues.DeleteIssue(pid, id, nil); err != nil {
 		Error(c, 500, err)
 		return
@@ -315,6 +362,12 @@ func UpdateIssue(c *gin.Context) {
 		Error(c, 404, errors.New("Params error."))
 		return
 	}
+
+	if !CheckProject(updateIssue.ProjectID) {
+		Error(c, 403, errors.New("No permission."))
+		return
+	}
+
 	issue, _, err := Gitlab.Issues.UpdateIssue(updateIssue.ProjectID, updateIssue.IssueID, &updateIssue.Options, nil)
 	if err != nil {
 		Error(c, 500, err)
