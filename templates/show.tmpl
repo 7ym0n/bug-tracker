@@ -1,0 +1,89 @@
+<div class="container">
+  <div class="card">
+    <div class="card-body">
+      <article class="markdown-body">
+        <h1 style="text-align: center;">{{ .bugtrack.Data.Title }}</h1>
+        <p style="text-align: center;">
+          <span>Issue ID:</span> <span class="badge bg-primary text-dark">{{ .bugtrack.Data.IID }}</span>
+          {{range $i,$v := .bugtrack.Data.Labels }}
+          {{if eq $v "Doing"}}
+          <span>Label:</span><span class="badge bg-success">{{ $v }}</span>
+          {{else if eq $v "Bug"}}
+          <span>Label:</span><span class="badge bg-danger">{{ $v }}</span>
+          {{else if eq $v "To Do"}}
+          <span>Label:</span><span class="badge bg-info">{{ $v }}</span>
+          {{end}}
+          {{end}}
+          <span>Author:</span><span class="badge bg-secondary">{{ .bugtrack.Data.Author.Username }}</span>
+          {{if ne .bugtrack.Data.Assignee nil}}
+          <span>Assignee:</span>
+          {{range $i,$v :=  .bugtrack.Data.Assignees }}
+          <span class="badge bg-secondary">{{ $v.Name }}</span>
+          {{end}}
+          {{end}}
+          <span>Comments:</span> <span class="badge bg-info text-dark">{{ .bugtrack.Data.UserNotesCount }}</span>
+        </p>
+        <div class="description-preview"></div>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css" integrity="sha512-Oy18vBnbSJkXTndr2n6lDMO5NN31UljR8e/ICzVPrGpSud4Gkckb8yUpqhKuUNoE+o9gAb4O/rAxxw1ojyUVzg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <style>
+	     .markdown-body {
+		   box-sizing: border-box;
+		   min-width: 200px;
+		   max-width: 980px;
+		   margin: 0 auto;
+		   padding: 45px;
+	     }
+
+	     @media (max-width: 767px) {
+		   .markdown-body {
+		     padding: 15px;
+		   }
+	     }
+        </style>
+      </article>
+      <article class="markdown-body">
+        <div class="card">
+          <div class="card-body" id="comments"></div>
+        </div>
+        <div style="padding-top:10px;float: right;">
+          <button class="btn btn-link" onclick="loadComment(page-1)" style="display:none">上一页</button>
+          <button class="btn btn-link" onclick="loadComment(page+1)" style="display:none">下一页</button>
+        </div>
+      </article>
+      <script>
+       var md = window.markdownit();
+       var result = md.render(filterXSS({{ .bugtrack.Data.Description }}));
+       document.querySelector(".description-preview").innerHTML = result;
+       var page = 1;
+       var perPage = 10;
+       function render(data) {
+         var comments = document.querySelector("#comments")
+         comments.innerHTML = ""
+         for(var i=0;i<data.data.length;i++){
+           var dom = document.createElement('div')
+           dom.innerHTML=filterXSS(data.data[i].body)
+           comments.appendChild(dom)
+         }
+       }
+       function loadComment(page) {
+         var data = {
+           projectId: {{ .bugtrack.Data.ProjectID }},
+           issueId: {{ .bugtrack.Data.IID }},
+           options: {
+             page: page,
+             perPage: perPage,
+           }
+         }
+         fetch('/comments', {
+           method: 'POST', // or 'PUT'
+           body: JSON.stringify(data), // data can be `string` or {object}!
+           headers: new Headers({'Content-Type': 'application/json'})
+         }).then(response => response.json())
+           .then(data => render(data));
+         page = page
+       }
+       loadComment(page)
+      </script>
+    </div>
+  </div>
+</div>

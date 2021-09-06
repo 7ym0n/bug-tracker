@@ -1,0 +1,283 @@
+
+<div class="container"  style="padding-top:10px;">
+  <div class="row">
+    <div class="col">
+      <select class="form-select" name="project" id="project">
+        {{range $v := .bugtrack.Config.Projects }}
+        <option value="{{ $v.ID }}">{{ $v.Name }}</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="col">
+      <select class="form-select" name="state" id="state">
+        <option value="all">All</option>
+        <option value="opened">Opened</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="col">
+      <select class="form-select" name="label" id="label">
+        <option value="">All</option>
+        <option value="Bug">Bug</option>
+        <option value="To Do">To Do</option>
+      </select>
+    </div>
+    <div class="col">
+      <button type="button" class="btn btn-outline-primary" onclick="load();">搜索</button>
+    </div>
+    <div class="col">
+      <button type="button" class="btn btn-outline-primary" style="float:right;" data-bs-toggle="modal" data-bs-target="#editModal">添加</button>
+    </div>
+  </div>
+  <div class="clear" style="padding-top:10px;padding-bottom:10px;"></div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Label</th>
+        <th scope="col">Title</th>
+        <th scope="col">Name</th>
+        <th scope="col">State</th>
+        <th scope="col">CreatedAt</th>
+        <th scope="col">UpdatedAt</th>
+        <th scope="col">Manager</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+    </tbody>
+  </table>
+</div>
+<div class="modal fade" id="editModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" >
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="staticBackdropLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancel()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="was-validated">
+          <div class="form-row">
+            <div>
+              <label for="validationDefault05">项目：</label>
+              <select class="form-select" name="project-id" id="project-id">
+                {{range $v := .bugtrack.Config.Projects }}
+                <option value="{{ $v.ID }}">{{ $v.Name }}</option>
+                {{end}}
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="validationDefault05">Issue标签:</label>
+              <select class="form-select custom-select" name="issue-label" id="issue-label" aria-label="Floating label select">
+                <option value="Bug">Bug</option>
+                <option value="To Do">To Do</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="validationDefault03">标题:</label>
+              <input type="text" class="form-control"  placeholder="" id="issue-title" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="validationDefault04">分配:</label>
+              <select class="form-select custom-select" name="issue-assignee" id="issue-assignee" aria-label="Floating label select">
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="custom-control-input">
+              <div class="col-md">
+                <label for="validationDefault04">Description:</label>
+                <textarea class="form-control" placeholder="use markdown write issue." id="issue-description" style="height: 400px"></textarea>
+              </div>
+            </div>
+            <div class="col-md">
+              <input type="file" id="issue-attach" class="form-file-input" id="validatedCustomFile" multiple onchange="upload()">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <input type="hidden" value="" id="issue-id" />
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cancel()">取消</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="update()">提交</button>
+      </div>
+    </div>
+  </div>
+  <script>
+   const render = (data) => {
+     var data = data.data
+     document.querySelector("#tbody").innerHTML = ""
+     for(var i=0;i<data.length;i++){
+       var dom = document.createElement('tr')
+       var label = ""
+       if (data[i].labels == "To Do"){
+         label = "<span class=\"badge bg-info\">"+data[i].labels+"</span>"
+       } else if (data[i].labels == "Bug") {
+         label = "<span class=\"badge bg-danger\">"+data[i].labels+"</span>"
+       } else if (data[i].labels == "Doing") {
+         label = "<span class=\"badge bg-primary\">"+data[i].labels+"</span>"
+       }
+       dom.innerHTML = "<td><a href=\"/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
+                       "<td>"+
+                       "<a href=\"/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
+                       "</td>"+
+                       "<td>"+data[i].author.username+"</td>"+
+                       "<td>"+data[i].state+"</td>"+
+                       "<td>"+data[i].created_at+"</td>"+
+                       "<td>"+data[i].updated_at+"</td>"+
+                       "<td><button class=\"btn btn-link\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal\" onclick=\"edit("+data[i].project_id+","+data[i].iid+")\">编辑</button></td>";
+
+       document.querySelector("#tbody").appendChild(dom)
+     }
+   }
+
+   const cancel = () => {
+     var description = "IyMg5qaC6L+wCmJ1Z+amgui/sAoKIyMg6YeN546w5q2l6aqkCjEuIGFhYQoyLiBiYmIKMy4gY2NjCgojIyBCdWfooYzkuLoKQnVn55qE6KGo546w6KGM5Li6CgojIyDmnJ/mnJvooYzkuLoK6L2v5Lu255qE5q2j56Gu6KGM5Li6CgojIyDpmYTku7YK6ZmE5LiK5Zu+54mH5oiW5pel5b+X77yM5pel5b+X6K+355So5qC85byP77ya"
+     document.querySelector("#issue-id").value=""
+     document.querySelector("#issue-title").value=""
+     document.querySelector("#issue-description").value=new Base64().decode(description)
+     select("", "#issue-assignee")
+     select("", "#project-id")
+   }
+   const update = () => {
+     var pid = document.querySelector("#project-id")
+     var id = document.querySelector("#issue-id")
+     var title = document.querySelector("#issue-title")
+     var label = document.querySelector("#issue-label")
+     var description = document.querySelector("#issue-description")
+     var assignee = document.querySelector("#issue-assignee")
+     var data = {}
+     var method = "PUT"
+     console.log(label, label.value, id ,id.value)
+     if (id.value!="") {
+       data = {
+         projectId:parseInt(pid.value),
+         issueId:parseInt(id.value),
+         options:{
+           title:title.value,
+           labels:[label.value],
+           description:description.value,
+           assignee_ids:[parseInt(assignee.value)]
+         }
+       }
+     } else {
+       data = {
+         projectId:parseInt(document.querySelector("#project-id").value),
+         options:{
+           title:title.value,
+           labels:[label.value],
+           description:description.value,
+           assignee_ids:[parseInt(assignee.value)]
+       }}
+       method = "POST"
+
+     }
+     fetch('/issue', {
+       method: method, // or 'PUT'
+       body: JSON.stringify(data), // data can be `string` or {object}!
+       headers: new Headers({'Content-Type': 'application/json'})
+     }).then(response => response.json())
+       .then(data => load());
+   }
+
+   const setModal = (data) => {
+     var id = document.querySelector("#issue-id")
+     var title = document.querySelector("#issue-title")
+     var description = document.querySelector("#issue-description")
+
+     if (data.data!=null) {
+       id.value = data.data.iid
+       title.value = data.data.title
+       description.value = data.data.description
+     }
+     select(data.data.labels, "#issue-label")
+     select(data.data.assignee, "#issue-assignee")
+     select(data.data.project_id, "#project-id")
+
+   }
+
+   const select = (value, selectID) =>{
+     var options = document.querySelector(selectID).options
+     for (var i=0; i< options.length; i++) {
+       if (options[i].value == value){
+         options[i].selected = true
+       }
+     }
+   }
+
+   const edit = (pid, id) => {
+     fetch('/issue/'+pid+"/"+id).then(response => response.json())
+                                .then(data => setModal(data))
+
+   }
+
+   const load = () => {
+     var projectId = document.querySelector("#project").value
+     var state = document.querySelector("#state").value
+     var label = document.querySelector("#label").value
+     var data = {projectId:parseInt(projectId),options:{state:state,labels:[label]}}
+
+     fetch('/issues', {
+       method: 'POST', // or 'PUT'
+       body: JSON.stringify(data), // data can be `string` or {object}!
+       headers: new Headers({'Content-Type': 'application/json'})
+     }).then(response => response.json())
+       .then(data => render(data));
+     cancel()
+   }
+
+
+   function setMemberSelect (data) {
+     var members = document.querySelector("#issue-assignee")
+     members.innerHTML = ""
+     var option = "<option selected></option>"
+     if (data.data!=null){
+       for (var i=0;i<data.data.length;i++){
+         option += "<option value=\""+data.data[i].id+"\">"+data.data[i].name+"</option>"
+       }
+     }
+     members.innerHTML = option
+   }
+
+   const loadMembers = () => {
+     var projectId = document.querySelector("#project").value
+     var data = {projectId:parseInt(projectId)}
+     fetch('/members', {
+       method: 'POST', // or 'PUT'
+       body: JSON.stringify(data), // data can be `string` or {object}!
+       headers: new Headers({'Content-Type': 'application/json'})
+     }).then(response => response.json())
+       .then(data => setMemberSelect(data));
+   }
+
+
+   const upload = ()=> {
+     var fileDom = document.getElementById('issue-attach');
+     var formData = new FormData();
+     for (var x = 0; x < fileDom.files.length; x++) {
+       formData.append("issue-attach[]", fileDom.files[x]);
+     }
+
+     fetch("/upload?pid="+document.querySelector("#project-id").value, {
+       method: 'POST',
+       body: formData,
+     }).then(response => response.json())
+       .then(data => setImage(data));;
+   }
+   const setImage = (data) => {
+     if (data.data!=null){
+       for (var i=0;i<data.data.length;i++) {
+         document.querySelector("#issue-description").value +="\r\n\r\n"+ data.data[i].markdown
+       }
+     }
+     document.getElementById('issue-attach').value = null
+   }
+
+   (() => {
+     load()
+     loadMembers()
+   })()
+
+
+  </script>
+</div>

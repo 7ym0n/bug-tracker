@@ -1,0 +1,24 @@
+* Introduction
+The Bug Tracker tool is used for small team problem tracking to associate the problem with the project instead of being in a free state.
+It is generally used when the project is not visible to everyone, so that users and testers can relate the feedback problems.
+
+* Install
+#+begin_src shell
+  make build # or make docker-build
+#+end_src
+
+* Usage
+Before use, you need to configure your project information and gitlab authentication token. in ~config.yaml~:
+#+begin_src
+Projects:
+  - ID: 1
+    Name: demo
+  = ID: 1
+    Name: frontend-demo
+
+AccessToken: <your gitlab authentication token>
+Repos: https://git.<your repo address>.org
+#+end_src
+
+* Screenshot
+[[demo][demo.png]]
