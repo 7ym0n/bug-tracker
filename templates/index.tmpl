@@ -1,5 +1,6 @@
 
 <div class="container"  style="padding-top:10px;">
+  <div class="alert alert-danger" role="alert" id="alert" style="display:none;"></div>
   <div class="row">
     <div class="col">
       <select class="form-select" name="project" id="project">
@@ -108,7 +109,15 @@
   <script>
 
    const render = (data) => {
-
+     var alert = document.querySelector("#alert")
+     if (data.code!=0) {
+       alert.innerHTML = data.msg
+       alert.setAttribute("style","display:block")
+       setTimeout(()=>{
+         alert.setAttribute("style","display:none")
+       }, 3000);
+       return
+     }
      var paging = paginate(
        data.totalItems,
        data.currentPage,
@@ -137,6 +146,12 @@
        } else if (data[i].labels == "Doing") {
          label = "<span class=\"badge bg-primary\">"+data[i].labels+"</span>"
        }
+       var manager = ""
+       if (data[i].state != "closed") {
+         manager =  "<td><button class=\"btn btn-link\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal\" onclick=\"edit("+data[i].project_id+","+data[i].iid+")\">编辑</button></td>";
+       } else {
+         manager = "<td><spanclass=\"badge bg-primary\">Done</span></td>"
+       }
        dom.innerHTML = "<td><a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
                        "<td>"+
                        "<a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
@@ -144,8 +159,7 @@
                        "<td>"+data[i].author.username+"</td>"+
                        "<td>"+data[i].state+"</td>"+
                        "<td>"+data[i].created_at+"</td>"+
-                       "<td>"+data[i].updated_at+"</td>"+
-                       "<td><button class=\"btn btn-link\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal\" onclick=\"edit("+data[i].project_id+","+data[i].iid+")\">编辑</button></td>";
+                       "<td>"+data[i].updated_at+"</td>"+manager
 
        document.querySelector("#tbody").appendChild(dom)
      }
@@ -202,6 +216,15 @@
    }
 
    const setModal = (data) => {
+     var alert = document.querySelector("#alert")
+     if (data.code!=0) {
+       alert.innerHTML = data.msg
+       alert.setAttribute("style","display:block")
+       setTimeout(()=>{
+         alert.setAttribute("style","display:none")
+       }, 3000);
+       return
+     }
      var id = document.querySelector("#issue-id")
      var title = document.querySelector("#issue-title")
      var description = document.querySelector("#issue-description")
@@ -264,7 +287,16 @@
    }
 
 
-   function setMemberSelect (data) {
+   const setMemberSelect = (data) => {
+     var alert = document.querySelector("#alert")
+     if (data.code!=0) {
+       alert.innerHTML = data.msg
+       alert.setAttribute("style","display:block")
+       setTimeout(()=>{
+         alert.setAttribute("style","display:none")
+       }, 3000);
+       return
+     }
      var members = document.querySelector("#issue-assignee")
      members.innerHTML = ""
      var option = "<option selected></option>"
@@ -302,6 +334,15 @@
        .then(data => setImage(data));;
    }
    const setImage = (data) => {
+     var alert = document.querySelector("#alert")
+     if (data.code!=0) {
+       alert.innerHTML = data.msg
+       alert.setAttribute("style","display:block")
+       setTimeout(()=>{
+         alert.setAttribute("style","display:none")
+       }, 3000);
+       return
+     }
      if (data.data!=null){
        for (var i=0;i<data.data.length;i++) {
          document.querySelector("#issue-description").value +="\r\n\r\n"+ data.data[i].markdown

@@ -368,6 +368,15 @@ func UpdateIssue(c *gin.Context) {
 		return
 	}
 
+	oldIssue, _, err := Gitlab.Issues.GetIssue(updateIssue.ProjectID, updateIssue.IssueID, nil)
+	if err != nil {
+		Error(c, 500, err)
+		return
+	}
+	if strings.ToLower(oldIssue.State) == "closed" {
+		Error(c, 302, errors.New("closed issue don't modify."))
+		return
+	}
 	issue, _, err := Gitlab.Issues.UpdateIssue(updateIssue.ProjectID, updateIssue.IssueID, &updateIssue.Options, nil)
 	if err != nil {
 		Error(c, 500, err)

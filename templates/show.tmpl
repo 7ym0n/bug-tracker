@@ -1,6 +1,7 @@
 <div class="container">
   <div class="card">
     <div class="card-body">
+      <div class="alert alert-danger" role="alert" id="alert" style="display:none;"></div>
       <article class="markdown-body">
         <h1 style="text-align: center;">{{ .bugtrack.Data.Title }}</h1>
         <p style="text-align: center;">
@@ -59,6 +60,15 @@
        var page = 1;
        var perPage = 10;
        function render(data) {
+         var alert = document.querySelector("#alert")
+         if (data.code!=0) {
+           alert.innerHTML = data.msg
+           alert.setAttribute("style","display:block")
+           setTimeout(()=>{
+             alert.setAttribute("style","display:none")
+           }, 3000);
+           return
+         }
          var comments = document.querySelector("#comments")
          comments.innerHTML = ""
          for(var i=0;i<data.data.length;i++){
