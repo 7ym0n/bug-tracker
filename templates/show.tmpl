@@ -19,6 +19,8 @@
           <span>Assignee:</span>
           {{range $i,$v :=  .bugtrack.Data.Assignees }}
           <span class="badge bg-secondary">{{ $v.Name }}</span>
+          <span>State:</span>
+          <span class="bgdge bg-secondary">{{ $v.State }}</span>
           {{end}}
           {{end}}
           <span>Comments:</span> <span class="badge bg-info text-dark">{{ .bugtrack.Data.UserNotesCount }}</span>
@@ -74,7 +76,7 @@
              perPage: perPage,
            }
          }
-         fetch('/comments', {
+         fetch('{{ .bugtrack.Config.BaseURL }}/comments', {
            method: 'POST', // or 'PUT'
            body: JSON.stringify(data), // data can be `string` or {object}!
            headers: new Headers({'Content-Type': 'application/json'})

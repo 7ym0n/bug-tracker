@@ -21,6 +21,7 @@ type config struct {
 	Projects    []Project
 	AccessToken string
 	Repos       string
+	BaseURL     string
 }
 
 var (

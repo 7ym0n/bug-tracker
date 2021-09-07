@@ -137,9 +137,9 @@
        } else if (data[i].labels == "Doing") {
          label = "<span class=\"badge bg-primary\">"+data[i].labels+"</span>"
        }
-       dom.innerHTML = "<td><a href=\"/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
+       dom.innerHTML = "<td><a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
                        "<td>"+
-                       "<a href=\"/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
+                       "<a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
                        "</td>"+
                        "<td>"+data[i].author.username+"</td>"+
                        "<td>"+data[i].state+"</td>"+
@@ -193,7 +193,7 @@
        method = "POST"
 
      }
-     fetch('/issue', {
+     fetch('{{ .bugtrack.Config.BaseURL }}/issue', {
        method: method, // or 'PUT'
        body: JSON.stringify(data), // data can be `string` or {object}!
        headers: new Headers({'Content-Type': 'application/json'})
@@ -229,8 +229,8 @@
    }
 
    const edit = (pid, id) => {
-     fetch('/issue/'+pid+"/"+id).then(response => response.json())
-                                .then(data => setModal(data))
+     fetch('{{ .bugtrack.Config.BaseURL }}/issue/'+pid+"/"+id).then(response => response.json())
+                                                                .then(data => setModal(data))
 
    }
 
@@ -254,7 +254,7 @@
        }
      }
 
-     fetch('/issues', {
+     fetch('{{ .bugtrack.Config.BaseURL }}/issues', {
        method: 'POST', // or 'PUT'
        body: JSON.stringify(data), // data can be `string` or {object}!
        headers: new Headers({'Content-Type': 'application/json'})
@@ -279,7 +279,7 @@
    const loadMembers = () => {
      var projectId = document.querySelector("#project").value
      var data = {projectId:parseInt(projectId)}
-     fetch('/members', {
+     fetch('{{ .bugtrack.Config.BaseURL }}/members', {
        method: 'POST', // or 'PUT'
        body: JSON.stringify(data), // data can be `string` or {object}!
        headers: new Headers({'Content-Type': 'application/json'})
@@ -295,7 +295,7 @@
        formData.append("issue-attach[]", fileDom.files[x]);
      }
 
-     fetch("/upload?pid="+document.querySelector("#project-id").value, {
+     fetch("{{ .bugtrack.Config.BaseURL }}/upload?pid="+document.querySelector("#project-id").value, {
        method: 'POST',
        body: formData,
      }).then(response => response.json())
