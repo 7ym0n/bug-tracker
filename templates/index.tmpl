@@ -58,45 +58,53 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancel()" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form class="was-validated">
-          <div class="form-row">
-            <div>
-              <label for="validationDefault05">项目：</label>
+        <form class="form-control">
+
+          <div class="row mb-3">
+
+
+            <label for="issue-title" class="col-sm-1 col-form-label">标题:</label>
+            <div class="col-sm">
+              <input type="text" class="form-control"  placeholder="" id="issue-title" required>
+            </div>
+          </div>
+          <div class="row mb-3">
+             <label for="issue-label" class="col-sm-1 col-form-label">标签:</label>
+            <div class="col-sm-2">
+              <select class="form-select custom-select" name="issue-label" id="issue-label" onChange="changeDescription()">
+                <option value="Bug">Bug</option>
+                <option value="To Do">To Do</option>
+              </select>
+            </div>
+            <label for="project-id" class="col-sm-1 col-form-label">项目:</label>
+            <div class="col-sm-4">
               <select class="form-select" name="project-id" id="project-id">
                 {{range $v := .bugtrack.Config.Projects }}
                 <option value="{{ $v.ID }}">{{ $v.Name }}</option>
                 {{end}}
               </select>
             </div>
-            <div class="col-md-3 mb-3">
-              <label for="validationDefault05">Issue标签:</label>
-              <select class="form-select custom-select" name="issue-label" id="issue-label" aria-label="Floating label select">
-                <option value="Bug">Bug</option>
-                <option value="To Do">To Do</option>
-              </select>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label for="validationDefault03">标题:</label>
-              <input type="text" class="form-control"  placeholder="" id="issue-title" required>
-            </div>
-            <div class="col-md-3 mb-3">
-              <label for="validationDefault04">分配:</label>
-              <select class="form-select custom-select" name="issue-assignee" id="issue-assignee" aria-label="Floating label select">
-              </select>
+            <label for="issue-assignee" class="col-sm-1 col-form-label">分配:</label>
+            <div class="col-sm-3">
+              <select class="form-select" name="issue-assignee" id="issue-assignee"></select>
             </div>
           </div>
 
-          <div class="row g-2">
-            <div class="custom-control-input">
-              <div class="col-md">
-                <label for="validationDefault04">Description:</label>
-                <textarea class="form-control" placeholder="use markdown write issue." id="issue-description" style="height: 400px"></textarea>
-              </div>
-            </div>
+          <div class="row mb-3">
             <div class="col-md">
-              <input type="file" id="issue-attach" class="form-file-input" id="validatedCustomFile" multiple onchange="upload()">
+              <label>Description:</label>
+              <textarea onkeyup="preview(this)" class="form-control" placeholder="use markdown write issue." id="issue-description" style="height: 400px"></textarea>
+            </div>
+
+            <div class="col-md">
+              <label>Preview:</label>
+              <div id="issue-preview" class="markdown-body overflow-auto" style="height: 400px;"></div>
             </div>
           </div>
+          <div class="col-md">
+            <input type="file" id="issue-attach" class="form-file-input" id="validatedCustomFile" multiple onchange="upload()">
+          </div>
+
         </form>
       </div>
       <div class="modal-footer">
@@ -107,254 +115,273 @@
     </div>
   </div>
   <script>
-
+   const preview = (e)=>{
+     var md = window.markdownit();
+     var result = md.render(filterXSS(e.value));
+     document.querySelector("#issue-preview").innerHTML = result;
+   }
    const render = (data) => {
-     var alert = document.querySelector("#alert")
-     if (data.code!=0) {
-       alert.innerHTML = data.msg
-       alert.setAttribute("style","display:block")
-       setTimeout(()=>{
-         alert.setAttribute("style","display:none")
-       }, 3000);
-       return
-     }
-     var paging = paginate(
-       data.totalItems,
-       data.currentPage,
-       data.itemsPerPage,
-       data.totalPages
-     )
-     var show = "<span style=\"padding-right: 10px;\">当前总数 "+ paging.totalItems+"</span>"
-     if (paging.startPage != paging.endPage){
-       if (paging.startPage > 1) {
-         show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.endPage-1)+","+paging.pageSize+")\">上一页</buttom>"
+       var alert = document.querySelector("#alert")
+       if (data.code!=0) {
+         alert.innerHTML = data.msg
+         alert.setAttribute("style","display:block")
+         setTimeout(()=>{
+           alert.setAttribute("style","display:none")
+         }, 3000);
+         return
        }
-       if (paging.currentPage < paging.totalPages) {
-         show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.startPage+1)+","+paging.pageSize+")\">下一页</buttom>"
-       }
-     }
-     document.querySelector("#issue-page").innerHTML = show
-     var data = data.data
-     document.querySelector("#tbody").innerHTML = ""
-     for(var i=0;i<data.length;i++){
-       var dom = document.createElement('tr')
-       var label = ""
-       if (data[i].labels == "To Do"){
-         label = "<span class=\"badge bg-info\">"+data[i].labels+"</span>"
-       } else if (data[i].labels == "Bug") {
-         label = "<span class=\"badge bg-danger\">"+data[i].labels+"</span>"
-       } else if (data[i].labels == "Doing") {
-         label = "<span class=\"badge bg-primary\">"+data[i].labels+"</span>"
-       }
-       var manager = ""
-       if (data[i].state != "closed") {
-         manager =  "<td><button class=\"btn btn-link\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal\" onclick=\"edit("+data[i].project_id+","+data[i].iid+")\">编辑</button></td>";
-       } else {
-         manager = "<td><spanclass=\"badge bg-primary\">Done</span></td>"
-       }
-       dom.innerHTML = "<td><a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
-                       "<td>"+
-                       "<a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
-                       "</td>"+
-                       "<td>"+data[i].author.username+"</td>"+
-                       "<td>"+data[i].state+"</td>"+
-                       "<td>"+data[i].created_at+"</td>"+
-                       "<td>"+data[i].updated_at+"</td>"+manager
-
-       document.querySelector("#tbody").appendChild(dom)
-     }
-
-
-   }
-
-   const cancel = () => {
-     var description = "IyMg5qaC6L+wCmJ1Z+amgui/sAoKIyMg6YeN546w5q2l6aqkCjEuIGFhYQoyLiBiYmIKMy4gY2NjCgojIyBCdWfooYzkuLoKQnVn55qE6KGo546w6KGM5Li6CgojIyDmnJ/mnJvooYzkuLoK6L2v5Lu255qE5q2j56Gu6KGM5Li6CgojIyDpmYTku7YK6ZmE5LiK5Zu+54mH5oiW5pel5b+X77yM5pel5b+X6K+355So5qC85byP77ya"
-     document.querySelector("#issue-id").value=""
-     document.querySelector("#issue-title").value=""
-     document.querySelector("#issue-description").value=new Base64().decode(description)
-     select("", "#issue-assignee")
-     select("", "#project-id")
-   }
-   const update = () => {
-     var pid = document.querySelector("#project-id")
-     var id = document.querySelector("#issue-id")
-     var title = document.querySelector("#issue-title")
-     var label = document.querySelector("#issue-label")
-     var description = document.querySelector("#issue-description")
-     var assignee = document.querySelector("#issue-assignee")
-     var data = {}
-     var method = "PUT"
-     if (id.value!="") {
-       data = {
-         projectId:parseInt(pid.value),
-         issueId:parseInt(id.value),
-         options:{
-           title:title.value,
-           labels:[label.value],
-           description:description.value,
-           assignee_ids:[parseInt(assignee.value)]
+       var paging = paginate(
+         data.totalItems,
+         data.currentPage,
+         data.itemsPerPage,
+         data.totalPages
+       )
+       var show = "<span style=\"padding-right: 10px;\">当前总数 "+ paging.totalItems+"</span>"
+       if (paging.startPage != paging.endPage){
+         if (paging.startPage > 1) {
+           show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.endPage-1)+","+paging.pageSize+")\">上一页</buttom>"
+         }
+         if (paging.currentPage < paging.totalPages) {
+           show += "<buttom class=\"btn btn-primary\" onclick=\"load("+(paging.startPage+1)+","+paging.pageSize+")\">下一页</buttom>"
          }
        }
-     } else {
-       data = {
-         projectId:parseInt(document.querySelector("#project-id").value),
-         options:{
-           title:title.value,
-           labels:[label.value],
-           description:description.value,
-           assignee_ids:[parseInt(assignee.value)]
-       }}
-       method = "POST"
+       document.querySelector("#issue-page").innerHTML = show
+       var data = data.data
+       document.querySelector("#tbody").innerHTML = ""
+       for(var i=0;i<data.length;i++){
+         var dom = document.createElement('tr')
+         var label = ""
+         if (data[i].labels == "To Do"){
+           label = "<span class=\"badge bg-info\">"+data[i].labels+"</span>"
+         } else if (data[i].labels == "Bug") {
+           label = "<span class=\"badge bg-danger\">"+data[i].labels+"</span>"
+         } else if (data[i].labels == "Doing") {
+           label = "<span class=\"badge bg-primary\">"+data[i].labels+"</span>"
+         }
+         var manager = ""
+         if (data[i].state != "closed") {
+           manager =  "<td><button class=\"btn btn-link\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal\" onclick=\"edit("+data[i].project_id+","+data[i].iid+")\">编辑</button></td>";
+         } else {
+           manager = "<td><spanclass=\"badge bg-primary\">Done</span></td>"
+         }
+         dom.innerHTML = "<td><a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+data[i].iid+"</a></td><td>"+label+"</td>"+
+                         "<td>"+
+                         "<a href=\"{{ .bugtrack.Config.BaseURL }}/show/"+data[i].project_id+"/"+data[i].iid+"\">"+filterXSS(data[i].title)+"</a>"+
+                         "</td>"+
+                         "<td>"+data[i].author.username+"</td>"+
+                         "<td>"+data[i].state+"</td>"+
+                         "<td>"+data[i].created_at+"</td>"+
+                         "<td>"+data[i].updated_at+"</td>"+manager
+
+         document.querySelector("#tbody").appendChild(dom)
+       }
+
 
      }
-     fetch('{{ .bugtrack.Config.BaseURL }}/issue', {
-       method: method, // or 'PUT'
-       body: JSON.stringify(data), // data can be `string` or {object}!
-       headers: new Headers({'Content-Type': 'application/json'})
-     }).then(response => response.json())
-       .then(data => load(1, 20));
-   }
-
-   const setModal = (data) => {
-     var alert = document.querySelector("#alert")
-     if (data.code!=0) {
-       alert.innerHTML = data.msg
-       alert.setAttribute("style","display:block")
-       setTimeout(()=>{
-         alert.setAttribute("style","display:none")
-       }, 3000);
-       return
+     var todo = "IyMg6ZyA5rGC6K+05piOCuivt+WcqOi/memHjOe8luWGmeivpue7huivtOaYjuOAguazqOaEj+S9v+eUqG1hcmtkb3du5paH5qGj5qC85byP77yM5aaC5p6c5pyJ5aSa6aG577yM6K+35L2/55So5a2Q5qCH6aKY44CCCiMjIyDov5nph4zmmK/lrZDmoIfpopgK6L+Z6YeM5piv5a2Q5qCH6aKY55qE6K+m57uG6K+05piO77yM5aaC5p6c5rKh5pyJ6K+35Yig6Zmk6L+Z6YOo5YiG44CCCgojIyDms6jmhI/kuovpobkK5aaC5p6c5rKh5pyJ6K+35Yig6Zmk6L+Z6YOo5YiG44CC"
+     var description = "IyMg5qaC6L+wCmJ1Z+ivtOaYjgoKIyMg6YeN546w5q2l6aqkCjEuIOatpemqpOS4gAoyLiDmraXpqqTkuowKCiMjIEJ1Z+ihjOS4ugpCdWfnmoTooajnjrDooYzkuLoKCiMjIOacn+acm+ihjOS4ugrova/ku7bnmoTmraPnoa7ooYzkuLoKCiMjIOmZhOS7tgrpmYTkuIrlm77niYfmiJbml6Xlv5fvvIzml6Xlv5for7fnlKjmoLzlvI8KYGBgdGV4dArov5nph4zotLTkuIrml6Xlv5fmlbDmja7jgIIKYGBgCiAgICA="
+     const changeDescription = ()=>{
+       var desc =  document.querySelector("#issue-description")
+       var id = document.querySelector("#issue-id")
+       if (id.value!="") {
+         return
+       }
+       if (document.querySelector("#issue-label").value == "Bug") {
+         desc.value=new Base64().decode(description)
+       } else {
+         desc.value=new Base64().decode(todo)
+       }
+       preview(desc)
      }
-     var id = document.querySelector("#issue-id")
-     var title = document.querySelector("#issue-title")
-     var description = document.querySelector("#issue-description")
-
-     if (data.data!=null) {
-       id.value = data.data.iid
-       title.value = data.data.title
-       description.value = data.data.description
+     const cancel = () => {
+       document.querySelector("#issue-id").value=""
+       document.querySelector("#issue-title").value=""
+       var desc = document.querySelector("#issue-description")
+       desc.value=new Base64().decode(description)
+       preview(desc)
+       select("", "#issue-assignee")
+       select("", "#project-id")
      }
-     select(data.data.labels, "#issue-label")
-     if (data.data.assignee!=null){
-       select(data.data.assignee.id, "#issue-assignee")
+     const update = () => {
+       var pid = document.querySelector("#project-id")
+       var id = document.querySelector("#issue-id")
+       var title = document.querySelector("#issue-title")
+       var label = document.querySelector("#issue-label")
+       var description = document.querySelector("#issue-description")
+       var assignee = document.querySelector("#issue-assignee")
+       var data = {}
+       var method = "PUT"
+       if (id.value!="") {
+         data = {
+           projectId:parseInt(pid.value),
+           issueId:parseInt(id.value),
+           options:{
+             title:title.value,
+             labels:[label.value],
+             description:description.value,
+             assignee_ids:[parseInt(assignee.value)]
+           }
+         }
+       } else {
+         data = {
+           projectId:parseInt(document.querySelector("#project-id").value),
+           options:{
+             title:title.value,
+             labels:[label.value],
+             description:description.value,
+             assignee_ids:[parseInt(assignee.value)]
+         }}
+         method = "POST"
+
+       }
+       fetch('{{ .bugtrack.Config.BaseURL }}/issue', {
+         method: method, // or 'PUT'
+         body: JSON.stringify(data), // data can be `string` or {object}!
+         headers: new Headers({'Content-Type': 'application/json'})
+       }).then(response => response.json())
+         .then(data => load(1, 20));
      }
-     select(data.data.project_id, "#project-id")
 
-   }
+     const setModal = (data) => {
+       var alert = document.querySelector("#alert")
+       if (data.code!=0) {
+         alert.innerHTML = data.msg
+         alert.setAttribute("style","display:block")
+         setTimeout(()=>{
+           alert.setAttribute("style","display:none")
+         }, 3000);
+         return
+       }
+       var id = document.querySelector("#issue-id")
+       var title = document.querySelector("#issue-title")
+       var description = document.querySelector("#issue-description")
 
-   const select = (value, selectID) =>{
-     var options = document.querySelector(selectID).options
-     for (var i=0; i< options.length; i++) {
-       if (options[i].value == value){
-         options[i].selected = true
+       if (data.data!=null) {
+         id.value = data.data.iid
+         title.value = data.data.title
+         description.value = data.data.description
+       }
+       select(data.data.labels, "#issue-label")
+       if (data.data.assignee!=null){
+         select(data.data.assignee.id, "#issue-assignee")
+       }
+       select(data.data.project_id, "#project-id")
+       preview(description)
+     }
+
+     const select = (value, selectID) =>{
+       var options = document.querySelector(selectID).options
+       for (var i=0; i< options.length; i++) {
+         if (options[i].value == value){
+           options[i].selected = true
+         }
        }
      }
-   }
 
-   const edit = (pid, id) => {
-     fetch('{{ .bugtrack.Config.BaseURL }}/issue/'+pid+"/"+id).then(response => response.json())
+     const edit = (pid, id) => {
+       fetch('{{ .bugtrack.Config.BaseURL }}/issue/'+pid+"/"+id).then(response => response.json())
                                                                 .then(data => setModal(data))
 
-   }
+     }
 
-   const load = (page, perPage) => {
-     if (page <= 0) {
-       page = 1
-     }
-     if (perPage <= 0) {
-       perPage = 20
-     }
-     var projectId = document.querySelector("#project").value
-     var state = document.querySelector("#state").value
-     var label = document.querySelector("#label").value
-     var data = {
-       projectId:parseInt(projectId),
-       options:{
-         page: page,
-         perPage: perPage,
-         state:state,
-         labels:[label]
+     const load = (page, perPage) => {
+       if (page <= 0) {
+         page = 1
        }
-     }
-
-     fetch('{{ .bugtrack.Config.BaseURL }}/issues', {
-       method: 'POST', // or 'PUT'
-       body: JSON.stringify(data), // data can be `string` or {object}!
-       headers: new Headers({'Content-Type': 'application/json'})
-     }).then(response => response.json())
-       .then(data => render(data));
-     cancel()
-   }
-
-
-   const setMemberSelect = (data) => {
-     var alert = document.querySelector("#alert")
-     if (data.code!=0) {
-       alert.innerHTML = data.msg
-       alert.setAttribute("style","display:block")
-       setTimeout(()=>{
-         alert.setAttribute("style","display:none")
-       }, 3000);
-       return
-     }
-     var members = document.querySelector("#issue-assignee")
-     members.innerHTML = ""
-     var option = "<option selected></option>"
-     if (data.data!=null){
-       for (var i=0;i<data.data.length;i++){
-         option += "<option value=\""+data.data[i].id+"\">"+data.data[i].name+"</option>"
+       if (perPage <= 0) {
+         perPage = 20
        }
-     }
-     members.innerHTML = option
-   }
-
-   const loadMembers = () => {
-     var projectId = document.querySelector("#project").value
-     var data = {projectId:parseInt(projectId)}
-     fetch('{{ .bugtrack.Config.BaseURL }}/members', {
-       method: 'POST', // or 'PUT'
-       body: JSON.stringify(data), // data can be `string` or {object}!
-       headers: new Headers({'Content-Type': 'application/json'})
-     }).then(response => response.json())
-       .then(data => setMemberSelect(data));
-   }
-
-
-   const upload = ()=> {
-     var fileDom = document.getElementById('issue-attach');
-     var formData = new FormData();
-     for (var x = 0; x < fileDom.files.length; x++) {
-       formData.append("issue-attach[]", fileDom.files[x]);
-     }
-
-     fetch("{{ .bugtrack.Config.BaseURL }}/upload?pid="+document.querySelector("#project-id").value, {
-       method: 'POST',
-       body: formData,
-     }).then(response => response.json())
-       .then(data => setImage(data));;
-   }
-   const setImage = (data) => {
-     var alert = document.querySelector("#alert")
-     if (data.code!=0) {
-       alert.innerHTML = data.msg
-       alert.setAttribute("style","display:block")
-       setTimeout(()=>{
-         alert.setAttribute("style","display:none")
-       }, 3000);
-       return
-     }
-     if (data.data!=null){
-       for (var i=0;i<data.data.length;i++) {
-         document.querySelector("#issue-description").value +="\r\n\r\n"+ data.data[i].markdown
+       var projectId = document.querySelector("#project").value
+       var state = document.querySelector("#state").value
+       var label = document.querySelector("#label").value
+       var data = {
+         projectId:parseInt(projectId),
+         options:{
+           page: page,
+           perPage: perPage,
+           state:state,
+           labels:[label]
+         }
        }
-     }
-     document.getElementById('issue-attach').value = null
-   }
 
-   (() => {
-     load(1, 20)
-     loadMembers()
-   })()
+       fetch('{{ .bugtrack.Config.BaseURL }}/issues', {
+         method: 'POST', // or 'PUT'
+         body: JSON.stringify(data), // data can be `string` or {object}!
+         headers: new Headers({'Content-Type': 'application/json'})
+       }).then(response => response.json())
+         .then(data => render(data));
+       cancel()
+     }
+
+
+     const setMemberSelect = (data) => {
+       var alert = document.querySelector("#alert")
+       if (data.code!=0) {
+         alert.innerHTML = data.msg
+         alert.setAttribute("style","display:block")
+         setTimeout(()=>{
+           alert.setAttribute("style","display:none")
+         }, 3000);
+         return
+       }
+       var members = document.querySelector("#issue-assignee")
+       members.innerHTML = ""
+       var option = "<option selected></option>"
+       if (data.data!=null){
+         for (var i=0;i<data.data.length;i++){
+           option += "<option value=\""+data.data[i].id+"\">"+data.data[i].name+"</option>"
+         }
+       }
+       members.innerHTML = option
+     }
+
+     const loadMembers = () => {
+       var projectId = document.querySelector("#project").value
+       var data = {projectId:parseInt(projectId)}
+       fetch('{{ .bugtrack.Config.BaseURL }}/members', {
+         method: 'POST', // or 'PUT'
+         body: JSON.stringify(data), // data can be `string` or {object}!
+         headers: new Headers({'Content-Type': 'application/json'})
+       }).then(response => response.json())
+         .then(data => setMemberSelect(data));
+     }
+
+
+     const upload = ()=> {
+       var fileDom = document.getElementById('issue-attach');
+       var formData = new FormData();
+       for (var x = 0; x < fileDom.files.length; x++) {
+         formData.append("issue-attach[]", fileDom.files[x]);
+       }
+
+       fetch("{{ .bugtrack.Config.BaseURL }}/upload?pid="+document.querySelector("#project-id").value, {
+         method: 'POST',
+         body: formData,
+       }).then(response => response.json())
+         .then(data => setImage(data));;
+     }
+     const setImage = (data) => {
+       var alert = document.querySelector("#alert")
+       if (data.code!=0) {
+         alert.innerHTML = data.msg
+         alert.setAttribute("style","display:block")
+         setTimeout(()=>{
+           alert.setAttribute("style","display:none")
+         }, 3000);
+         return
+       }
+       if (data.data!=null){
+         for (var i=0;i<data.data.length;i++) {
+           document.querySelector("#issue-description").value +="\r\n\r\n"+ data.data[i].markdown
+         }
+       }
+       document.getElementById('issue-attach').value = null
+     }
+
+     (() => {
+       load(1, 20)
+       loadMembers()
+     })()
 
 
   </script>
