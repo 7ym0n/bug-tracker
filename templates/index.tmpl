@@ -196,8 +196,13 @@
      const cancel = () => {
        document.querySelector("#issue-id").value=""
        document.querySelector("#issue-title").value=""
+       var label = document.querySelector("#issue-label")
        var desc = document.querySelector("#issue-description")
-       desc.value=new Base64().decode(description)
+       if (label.value == "Bug") {
+         desc.value=new Base64().decode(description)
+       } else {
+         desc.value=new Base64().decode(todo)
+       }
        preview(desc)
        select("", "#issue-assignee")
        select("", "#project-id")
